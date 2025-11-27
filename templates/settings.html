@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loot Bin Settings</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body data-page="settings">
+  <div class="page">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Loot Bin</p>
+        <h1>Control the odds</h1>
+        <p class="lede">Adjust the predetermined win ratio and enable simulator mode for Windows testing. When simulator is on, press spacebar to mimic the IR sensor.</p>
+      </div>
+      <div class="actions">
+        <a class="ghost-button" href="/">Back to slot view</a>
+      </div>
+    </header>
+
+    <main class="panel settings-panel">
+      <form id="settingsForm" class="form">
+        <label class="field">
+          <div class="label-row">
+            <span>Win ratio</span>
+            <span id="winRatioValue">0.25</span>
+          </div>
+          <input type="range" min="0" max="1" step="0.01" id="winRatio" name="win_ratio" value="0.25">
+          <p class="hint">Three-of-a-kind wins repeat on a pre-built cycle, not randomness. For example, 0.25 means roughly 5 wins every 20 triggers.</p>
+        </label>
+
+        <label class="field inline">
+          <input type="checkbox" id="simulatorMode" name="simulator_mode" checked>
+          <span>Enable simulator mode (spacebar to trigger)</span>
+        </label>
+
+        <div class="form-actions">
+          <button class="primary-button" type="submit">Save settings</button>
+          <span id="settingsStatus" class="status-inline"></span>
+        </div>
+      </form>
+
+      <div class="hint-card">
+        <p class="hint-title">Simulator shortcut</p>
+        <p class="hint">With simulator enabled, hit the spacebar to queue a spin exactly as if the IR sensor fired.</p>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

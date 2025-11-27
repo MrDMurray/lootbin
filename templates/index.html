@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loot Bin</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body data-page="home">
+  <div class="page">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Loot Bin</p>
+        <h1>Drop in trash. Watch the slots. Maybe win a prize.</h1>
+        <p class="lede">IR sensor listens on GPIO4. Wins are rigged to the configured ratio. On a win, the stepper fires for 3 seconds.</p>
+      </div>
+      <div class="actions">
+        <a class="ghost-button" href="/settings">Settings</a>
+        <button id="testSpin" class="primary-button">Test Spin</button>
+      </div>
+    </header>
+
+    <main class="panel">
+      <div class="canvas-wrapper">
+        <canvas id="slotCanvas"></canvas>
+        <div id="winBanner" class="win-banner" hidden>WIN!</div>
+        <div id="statusMessage" class="status">Waiting for bin activity…</div>
+      </div>
+      <div class="mini-log" id="eventLog"></div>
+    </main>
+  </div>
+
+  <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
