@@ -1,12 +1,13 @@
 import json
 import os
 import queue
+import random
 import threading
 import time
 import uuid
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_file
 
 
 BASE_DIR = Path(__file__).parent
@@ -15,10 +16,18 @@ CONFIG_PATH = BASE_DIR / "config.json"
 # Hardware wiring
 IR_PIN = 4
 STEPPER_PINS = [14, 15, 18, 23]
+SOUNDS_DIR = BASE_DIR / "sounds"
+LOOSE_DIR = SOUNDS_DIR / "loose"
+WIN_DIR = SOUNDS_DIR / "win"
+GONA_WIN_FILE = WIN_DIR / "gona_win.mp3"
+VICTORY_FILE = WIN_DIR / "victory.mp3"
+CHING_FILE = SOUNDS_DIR / "ching.wav"
 
 DEFAULT_CONFIG = {
     "win_ratio": 0.25,
     "simulator_mode": True,
+    "music_enabled": True,
+    "sfx_enabled": True,
 }
 
 # Simple cycle that pre-determines wins ahead of time rather than relying on randomness.
@@ -244,9 +253,16 @@ class Runtime:
         except queue.Empty:
             return None
 
-    def update_config(self, win_ratio: float, simulator_mode: bool):
+    def update_config(self, win_ratio: float, simulator_mode: bool, music_enabled: bool, sfx_enabled: bool):
         self.rigged.set_ratio(win_ratio)
-        self.config.save({"win_ratio": win_ratio, "simulator_mode": simulator_mode})
+        self.config.save(
+            {
+                "win_ratio": win_ratio,
+                "simulator_mode": simulator_mode,
+                "music_enabled": music_enabled,
+                "sfx_enabled": sfx_enabled,
+            }
+        )
 
     def cleanup(self):
         self.ir_listener.cleanup()
@@ -257,8 +273,9 @@ runtime = Runtime()
 app = Flask(__name__)
 
 
-@app.before_first_request
+@app.before_request
 def _start_runtime():
+    # Flask 3 dropped before_first_request, so ensure on every request instead.
     runtime.ensure_started()
 
 
@@ -280,13 +297,20 @@ def api_config():
     payload = request.get_json(force=True, silent=True) or {}
     win_ratio = payload.get("win_ratio", DEFAULT_CONFIG["win_ratio"])
     simulator_mode = payload.get("simulator_mode", DEFAULT_CONFIG["simulator_mode"])
+    music_enabled = payload.get("music_enabled", DEFAULT_CONFIG["music_enabled"])
+    sfx_enabled = payload.get("sfx_enabled", DEFAULT_CONFIG["sfx_enabled"])
 
     try:
         win_ratio_value = float(win_ratio)
     except (TypeError, ValueError):
         return jsonify({"error": "Invalid win_ratio"}), 400
 
-    runtime.update_config(win_ratio_value, bool(simulator_mode))
+    runtime.update_config(
+        win_ratio_value,
+        bool(simulator_mode),
+        bool(music_enabled),
+        bool(sfx_enabled),
+    )
     return jsonify(runtime.config.get())
 
 
@@ -317,6 +341,42 @@ def api_test_spin():
 @app.route("/health")
 def health():
     return jsonify({"status": "ok"})
+
+
+def _pick_audio_file(directory: Path, exclude: set[str] | None = None):
+    if not directory.exists() or not directory.is_dir():
+        return None
+    exclude = exclude or set()
+    candidates = [
+        p for p in directory.iterdir() if p.suffix.lower() == ".mp3" and p.is_file() and p.name not in exclude
+    ]
+    if not candidates:
+        return None
+    return random.choice(candidates)
+
+
+@app.route("/media/<kind>")
+def media(kind: str):
+    kind = kind.lower()
+    path = None
+    mimetype = "audio/mpeg"
+    if kind == "victory":
+        path = VICTORY_FILE
+    elif kind == "ching":
+        path = CHING_FILE
+        mimetype = "audio/wav"
+    elif kind == "win":
+        if GONA_WIN_FILE.exists():
+            path = GONA_WIN_FILE
+        else:
+            path = _pick_audio_file(WIN_DIR, exclude={VICTORY_FILE.name})
+    elif kind == "loose":
+        path = _pick_audio_file(LOOSE_DIR)
+
+    if not path or not path.exists():
+        return jsonify({"error": "Audio not found"}), 404
+
+    return send_file(path, mimetype=mimetype, conditional=True)
 
 
 def _shutdown():
