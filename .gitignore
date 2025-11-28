@@ -5,6 +5,8 @@ __pycache__/
 *.mp3
 # C extensions
 *.so
+*.wav
+*.Zone.Identifier
 
 # Distribution / packaging
 .Python
